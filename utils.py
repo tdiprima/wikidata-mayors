@@ -1,14 +1,15 @@
-import pandas as pd
-from datetime import datetime
-import requests
 import json
+from datetime import datetime
+
+import pandas as pd
+import requests
 
 
 def convert_datatype(entry):
     if 'datatype' in entry:
         if entry['datatype'] == 'http://www.w3.org/2001/XMLSchema#decimal':
             return float(entry['value'])
-        elif entry['datatype'] == 'http://www.w3.org/2001/XMLSchema#integer':    
+        elif entry['datatype'] == 'http://www.w3.org/2001/XMLSchema#integer':
             return int(entry['value'])
         elif entry['datatype'] == 'http://www.w3.org/2001/XMLSchema#dateTime':
             date = entry['value']
@@ -20,11 +21,14 @@ def convert_datatype(entry):
 def wikidata_query(query):
     url = 'https://query.wikidata.org/sparql'
     try:
-        r = requests.get(url, params = {'format': 'json', 'query': query})
-        data = r.json()
+        r = requests.get(url, params={'format': 'json', 'query': query})
+        if r.status_code == 200:
+            data = r.json()
+        else:
+            print('status code:', r.status_code, r.reason)
     except json.JSONDecodeError as e:
         raise Exception('Invalid query')
-    
+
     if ('results' in data) and ('bindings' in data['results']):
         columns = data['head']['vars']
         rows = []
@@ -34,5 +38,5 @@ def wikidata_query(query):
             rows.append(row)
     else:
         raise Exception('No results')
-    
+
     return pd.DataFrame(rows, columns=columns)

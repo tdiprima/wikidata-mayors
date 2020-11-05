@@ -1,11 +1,11 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+from geopy.distance import distance
 import requests
 import json
 from datetime import datetime
-from geopy.distance import distance
-import utils
 
+import utils
 
 country_query = """
 SELECT DISTINCT ?country ?countryLabel WHERE {
@@ -62,7 +62,6 @@ WHERE {{
 }}
 """
 
-
 # Get Wikidata code from each country
 df_countries = utils.wikidata_query(country_query)
 df_countries['code'] = df_countries['country'].str.split('/').str[-1]
@@ -72,11 +71,11 @@ df_list = []
 for index, (country, country_label, country_code) in df_countries.iterrows():
     print(country_label, country_code)
     df = utils.wikidata_query(mayor_query.format(country_code))
-    
+
     df.insert(0, 'country', country_label)
     print('Entries :', len(df))
     print()
-    
+
     df_list.append(df)
 
 # Collect all rows into single table
@@ -88,16 +87,18 @@ df[['city_lon', 'city_lat']] = df[['city_lon', 'city_lat']].astype(float)
 df[['birth_city_lon', 'birth_city_lat']] = df['birth_city_coordinates'].str[6:-1].str.split(' ', expand=True)
 df[['birth_city_lon', 'birth_city_lat']] = df[['birth_city_lon', 'birth_city_lat']].astype(float)
 
+
 # Calculate distance between city and birth city
 def calc_distance(row):
     lon0, lat0 = row['city_lon'], row['city_lat']
     lon1, lat1 = row['birth_city_lon'], row['birth_city_lat']
-    
+
     if np.isnan(lon1) or np.isnan(lat1):
         return None
     else:
         return distance((lat0, lon0), (lat1, lon1)).m
-        
+
+
 df['distance'] = df.apply(calc_distance, axis=1)
 
 # Drop original coordinates columns
@@ -108,3 +109,5 @@ print(df.info())
 
 # Save table to file
 df.to_csv('data/european_mayors.csv', index=False)
+
+exit(0)
